@@ -1,0 +1,242 @@
+---
+title: "Data validation"
+author: "HMZ"
+date: "2025-03-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(viridis)
+library(lubridate)
+```
+
+## Carga de datos
+
+Descarga de datos desde REDCAP.
+
+Leemos el .csv con la data obtenida del censo
+
+```{r datos, echo=FALSE}
+datos <- read_csv("HarmonizePECenso_DATA_2025-03-10_2045.csv")
+```
+
+### Asignación de códigos de comunidad y hogar
+
+```{r}
+# 1. Extraer los códigos directamente desde la columna `id`
+datos <- datos %>%
+  mutate(
+    codigo_proyecto = substr(id, 1, 2),     # Extrae los primeros 2 dígitos (proyecto)
+    codigo_comunidad = substr(id, 3, 4),    # Extrae los siguientes 2 dígitos (comunidad)
+    codigo_hogar = substr(id, 5, 7)         # Extrae los últimos 3 dígitos (hogar)
+  ) %>%
+  
+  # 2. Completar las columnas originales usando `coalesce()` para reemplazar NAs
+  mutate(
+    
+    upch_code_proj = coalesce(upch_code_proj, codigo_proyecto),
+    upch_code_community = coalesce(upch_code_community, codigo_comunidad),
+    upch_code_casa = coalesce(upch_code_casa, codigo_hogar)
+  ) %>%
+  
+  group_by(upch_code_proj, upch_code_community, upch_code_casa) %>%
+  fill(upch_nomb_encuestador, .direction = "downup") %>%  # Propaga hacia abajo y arriba
+  
+  ungroup() %>%
+  
+  # 3. Eliminar las columnas auxiliares si ya no las necesitas
+  select(-codigo_proyecto, -codigo_comunidad, -codigo_hogar)
+
+# Visualizar los primeros registros para verificar
+head(datos)
+```
+### Asignación de nombres de las comunidades 
+
+```{r}
+comunidades_dict <- c(
+  "01" = "Quistococha",
+  "02" = "Zungarococha",
+  "03" = "Llanchama",
+  "04" = "Varillal",
+  "05" = "San Carlos",
+  "06" = "El Paujil",
+  "07" = "San Lucas",
+  "08" = "23 de Febrero",
+  "09" = "12 de Abril",
+  "10" = "Cahuide"
+)
+
+datos <- datos %>%
+  mutate(comunidad_nombre = recode(upch_code_community, !!!comunidades_dict))
+```
+
+
+## 1. Verificación de la geolocalización de hogares
+
+Convertimos la base de datos a una geometría
+
+```{r sf}
+datos_sf <- datos %>%
+  filter(!is.na(upch_long)) %>%
+  filter(!is.na(upch_lat)) %>%
+  st_as_sf(coords = c("upch_long", "upch_lat"), crs = 4326)
+```
+
+### 1.1. Ubicación por comunidad para hacer la verificación
+
+```{r}
+
+# mapview(datos_sf, zcol = "comunidad_nombre")
+
+#leaflet() %>%
+#  addTiles(urlTemplate = "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}") %>%
+#  addPopups(data=datos_sf, popup = datos_sf$id)
+
+pal <- colorFactor(palette = viridis(n = 10), domain = datos_sf$comunidad_nombre)
+
+leaflet(datos_sf) %>%
+  addTiles(urlTemplate = "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+    options = providerTileOptions(maxNativeZoom=19,maxZoom=25)
+    ) %>%
+  
+  # Añade círculos para marcar las ubicaciones
+  addCircleMarkers(
+    radius = 5,               # Tamaño de los puntos
+    fillColor = ~pal(comunidad_nombre),  # Colores distintos por comunidad
+    fillOpacity = 1,        # Opacidad del relleno
+    stroke = TRUE,            # Borde del círculo
+    weight = 1,               # Grosor del borde
+    label = ~comunidad_nombre # Etiqueta flotante que muestra la comunidad
+  )
+
+```
+
+## 2. Validación de censados, encuestados y hogares por comunidad
+
+```{r }
+# 1. Calcular los totales
+
+datos_filtrados <- datos %>%
+  filter(upch_ei_presente == 1)
+
+conteo <- datos %>%
+  group_by(comunidad_nombre) %>%
+  summarise(
+    total_censados = n(),  # Total de censados
+    total_encuestados = sum(!is.na(upch_ei_mosq)),  # Total de encuestados
+    total_hogares = n_distinct(id)  # Total de hogares
+  ) %>%
+  pivot_longer(cols = -comunidad_nombre, names_to = "categoria", values_to = "total")
+
+conteo
+```
+
+### 2.1. Ploteo de gráficas por comunidad
+```{r}
+ggplot(conteo, aes(x = total, y = categoria)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = total), hjust = -0.2) +  # Etiquetas en cada barra
+  labs(
+    title = "Conteo de Censados, Encuestados y Hogares",
+    x = "Total",
+    y = "Categoría"
+  ) +
+  facet_wrap(~comunidad_nombre) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 10)
+  )
+```
+### 2.2. Análisis de participación de la encuesta
+```{r}
+datos_filtrados <- datos %>%
+  select(comunidad_nombre, upch_nomb_encuestador, obs_encuesta, upch_ei_presente) %>%
+  filter(upch_ei_presente != 1)
+
+datos_parti <- datos_filtrados %>%
+  #filter(!is.na(obs_encuesta)) %>%
+  mutate(
+    no_participa = case_when(
+      str_detect(obs_encuesta, "(?i)particip") ~ "No desea",  # Coincide con cualquier forma de "participar"
+      TRUE ~ "Otro"  # Si no se encuentra coincidencia, se marca como "No"
+    )
+  )
+
+conteo_parti <- datos_parti %>%
+  group_by(comunidad_nombre) %>%
+  summarise(no_desea = sum(no_participa == "No desea"))
+
+conteo_parti
+```
+
+## 3. validacion de edad 
+
+```{r}
+edades1 <- datos %>%
+  mutate(
+    upch_ei_fec_nac = ymd(upch_ei_fec_nac),   # Convierte la columna a formato fecha
+    edad = floor(interval(start = upch_ei_fec_nac, end = today()) / years(1))  # Calcula la edad en años
+  )
+
+datos_niños1 <- edades1 %>%
+  filter(edad >= 7)
+
+edades2 <- datos %>%
+  mutate(
+    upch_ei_fec_nac = ymd(upch_ei_fec_nac),
+    edad = if_else(is.na(upch_ei_fec_nac), NA_real_, floor(interval(start = upch_ei_fec_nac, end = today()) / years(1)))
+  )
+
+datos_niños2 <- edades2 %>%
+  filter(edad >= 7)
+
+```
+
+
+```{r}
+conteo_edades <- datos_niños1 %>%
+  group_by(comunidad_nombre) %>%
+  summarise(
+    total_censados = n(),  # Total de censados
+    total_encuestados = sum(!is.na(upch_ei_mosq)),  # Total de encuestados
+    total_hogares = n_distinct(id)  # Total de hogares
+  ) %>%
+  pivot_longer(cols = -comunidad_nombre, names_to = "categoria", values_to = "total")
+
+
+ggplot(conteo_edades, aes(x = total, y = categoria)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = total), hjust = -0.2) +  # Etiquetas en cada barra
+  labs(
+    title = "Conteo de Censados, Encuestados y Hogares",
+    x = "Total",
+    y = "Categoría"
+  ) +
+  facet_wrap(~comunidad_nombre) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 10)
+  )
+```
+
+## 4. Validación de sexo
+
+```{r}
+
+```
+
+
+## 5. Validación de DNI (8 dígitos)
+### 5.1. Identificar personas sin DNI 
+
+
+
