@@ -22,7 +22,7 @@ Descarga de datos desde REDCAP.
 Leemos el .csv con la data obtenida del censo
 
 ```{r datos, echo=FALSE}
-datos <- read_csv("HarmonizePECenso_DATA_2025-03-10_2045.csv")
+datos <- read_csv("data/HarmonizePECenso_DATA_2025-03-12_2234.csv")
 ```
 
 ### Asignación de códigos de comunidad y hogar
@@ -101,8 +101,8 @@ pal <- colorFactor(palette = viridis(n = 10), domain = datos_sf$comunidad_nombre
 
 leaflet(datos_sf) %>%
   addTiles(urlTemplate = "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
-    options = providerTileOptions(maxNativeZoom=19,maxZoom=25)
-    ) %>%
+           options = providerTileOptions(maxNativeZoom=19,maxZoom=25)
+  ) %>%
   
   # Añade círculos para marcar las ubicaciones
   addCircleMarkers(
@@ -137,7 +137,7 @@ conteo
 ```
 
 ### 2.1. Ploteo de gráficas por comunidad
-```{r}
+```{r, fig.width=14, fig.height=6}
 ggplot(conteo, aes(x = total, y = categoria)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   geom_text(aes(label = total), hjust = -0.2) +  # Etiquetas en cada barra
@@ -200,7 +200,7 @@ datos_niños2 <- edades2 %>%
 ```
 
 
-```{r}
+```{r, fig.width=14, fig.height=6}
 conteo_edades <- datos_niños1 %>%
   group_by(comunidad_nombre) %>%
   summarise(
@@ -228,15 +228,145 @@ ggplot(conteo_edades, aes(x = total, y = categoria)) +
   )
 ```
 
-## 4. Validación de sexo
-
 ```{r}
+ggplot(conteo_edades, aes(x = total, y = categoria)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = total), hjust = -0.2) +  # Etiquetas en cada barra
+  labs(
+    title = "Conteo de Censados, Encuestados y Hogares",
+    x = "Total",
+    y = "Categoría"
+  ) +
+  facet_wrap(~comunidad_nombre) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 10)
+  )
+```
+
+
+```{r, fig.width=10, fig.height=9}
+ggplot(edades1, aes(x = edad)) +
+  geom_histogram(binwidth = 10, fill = "steelblue", color = "black") +
+  labs(
+    title = "Distribución del Total de Censados, Encuestados y Hogares",
+    x = "Total",
+    y = "Frecuencia"
+  ) +
+  facet_wrap(~comunidad_nombre, scales = "free_y") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 10)
+  )
 
 ```
 
 
+## 4. Validación de sexo
+
+```{r}
+
+datos_niños2 <- datos_niños2 %>%
+  filter(!is.na(upch_ei_sexo)) %>%
+  mutate(upch_ei_sexo = factor(upch_ei_sexo, 
+                               levels = c(0, 1), 
+                               labels = c("F", "M")))
+
+# 1. Agrupar por comunidad y sexo, y calcular los totales
+conteo_sexo <- datos_niños2 %>%
+  group_by(comunidad_nombre, upch_ei_sexo) %>%
+  summarise(total_personas = n(), .groups = "drop")  # Suma de personas por sexo
+```
+
+
+```{r, fig.width=10, fig.height=9}
+
+# 2. Crear el gráfico de barras
+ggplot(conteo_sexo, aes(x = upch_ei_sexo, y = total_personas, fill = upch_ei_sexo)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = total_personas), vjust = -0.5) +  # Mostrar los valores sobre las barras
+  labs(
+    title = "Comparación de Hombres y Mujeres por Comunidad",
+    x = "Sexo",
+    y = "Total de Personas"
+  ) +
+  facet_wrap(~comunidad_nombre, scales = "free_y") +  # Permite que el eje Y se ajuste automáticamente
+  scale_fill_manual(values = c("M" = "#1f77b4", "F" = "#ff7f0e")) +  # Colores personalizados
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text = element_text(size = 12, face = "bold")
+  )
+```
+
+
 ## 5. Validación de DNI (8 dígitos)
-### 5.1. Identificar personas sin DNI 
 
+```{r}
+# 1. Validar DNI: 8 dígitos y que no sea '00000000' ni '99999999'
+datos <- datos %>%
+  mutate(
+    dni_valido = case_when(
+      is.na(upch_ei_dni) ~ "Sin DNI",  
+      nchar(upch_ei_dni) == 8 & !upch_ei_dni %in% c("00000000", "99999999") ~ "Válido",
+      TRUE ~ "Inválido"
+    )
+  )
 
+# 2. Conteo de DNIs válidos e inválidos por comunidad
+conteo_dni_comunidad <- datos %>%
+  group_by(comunidad_nombre, dni_valido) %>%
+  summarise(total = n(), .groups = "drop")
+
+# 3. Mostrar el resultado
+print(conteo_dni_comunidad)
+
+```
+
+```{r}
+ggplot(conteo_dni_comunidad, aes(x = comunidad_nombre, y = total, fill = dni_valido)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Conteo de DNIs por Comunidad",
+    x = "Comunidad",
+    y = "Cantidad de DNIs"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+## 6. Bivariado - Sexo y Embarazo
+
+```{r}
+# 1. Conteo de personas embarazadas por sexo
+conteo_embarazo <- datos %>%
+  mutate(upch_ei_sexo = factor(upch_ei_sexo, 
+                               levels = c(0, 1), 
+                               labels = c("F", "M"))) %>%
+  filter(!is.na(upch_ei_embarazada)) %>%  # Filtramos los que tienen datos en la columna de embarazo
+  group_by(upch_ei_sexo, upch_ei_embarazada) %>%
+  summarise(total = n(), .groups = "drop")
+
+# 2. Visualización del resultado
+print(conteo_embarazo)
+```
+
+```{r}
+ggplot(conteo_embarazo, aes(x = upch_ei_sexo, y = total, fill = as.factor(upch_ei_embarazada))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Conteo de personas embarazadas por sexo",
+    x = "Sexo",
+    y = "Total de personas"
+  ) +
+  scale_fill_manual(name = "Embarazada", values = c("0" = "#1f77b4", "1" = "#ff7f0e")) +
+  theme_minimal()
+```
 
