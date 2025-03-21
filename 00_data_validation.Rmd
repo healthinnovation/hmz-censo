@@ -13,6 +13,19 @@ library(sf)
 library(leaflet)
 library(viridis)
 library(lubridate)
+library(redcapAPI)
+```
+
+
+```{r}
+unlockREDCap(c(rcon    = 'Harmonize - PE - Censo'),
+             keyring     = 'API_KEYs',
+             envir       = globalenv(),
+             url         = 'https://redcap.upch.edu.pe/redcap_v14.5.14/API/')
+
+exportBulkRecords(list(db = rcon),
+  forms = list(db = unique(rcon$metadata()$form_name)),
+  envir = globalenv())
 ```
 
 ## Carga de datos
@@ -22,7 +35,7 @@ Descarga de datos desde REDCAP.
 Leemos el .csv con la data obtenida del censo
 
 ```{r datos, echo=FALSE}
-datos <- read_csv("data/HarmonizePECenso_DATA_2025-03-12_2234.csv")
+datos <- read_csv("data/HarmonizePECenso_DATA_2025-03-21_1508.csv")
 ```
 
 ### Asignación de códigos de comunidad y hogar
@@ -368,5 +381,61 @@ ggplot(conteo_embarazo, aes(x = upch_ei_sexo, y = total, fill = as.factor(upch_e
   ) +
   scale_fill_manual(name = "Embarazada", values = c("0" = "#1f77b4", "1" = "#ff7f0e")) +
   theme_minimal()
+```
+## 7. Rechazo en menores y adultos
+
+```{r}
+# Filtrado inicial
+datos_filtrados <- edades1 %>%
+  filter(edad > 7, is.na(upch_ei_mosq)) %>%
+  select(comunidad_nombre, upch_nomb_encuestador, obs_encuesta, upch_ei_presente, edad)
+
+# Clasificación por edad
+datos_filtrados <- datos_filtrados %>%
+  mutate(grupo_edad = ifelse(edad >= 18, "Adulto", "Menor de edad"))
+
+# Identificación de no participación
+datos_parti <- datos_filtrados %>%
+  mutate(
+    no_participa = case_when(
+      str_detect(obs_encuesta, "(?i)particip") ~ "No desea",
+      TRUE ~ "Otro"
+    )
+  )
+
+# Conteo de participación por comunidad y grupo de edad
+conteo_parti <- datos_parti %>%
+  group_by(comunidad_nombre, grupo_edad) %>%
+  summarise(no_desea = sum(no_participa == "No desea"), .groups = 'drop')
+
+conteo_parti
+```
+
+## 8. Hogares con solo hombres o solo mujeres
+
+```{r}
+# Identificar casas solo con hombres o solo con mujeres
+validacion_casas <- datos %>%
+  group_by(upch_code_casa, comunidad_nombre) %>%
+  summarise(
+    solo_hombres = all(upch_ei_sexo == 1),
+    solo_mujeres = all(upch_ei_sexo == 0),
+    .groups = 'drop'
+  )
+
+# Conteo de casas por comunidad
+conteo_casas <- validacion_casas %>%
+  group_by(comunidad_nombre) %>%
+  summarise(
+    casas_solo_hombres = sum(solo_hombres),
+    casas_solo_mujeres = sum(solo_mujeres)
+  ) %>%
+  mutate(
+    casas_solo_hombres = replace_na(casas_solo_hombres, 0),
+    casas_solo_mujeres = replace_na(casas_solo_mujeres, 0)
+  )
+
+conteo_casas
+
 ```
 
