@@ -35,7 +35,7 @@ Descarga de datos desde REDCAP.
 Leemos el .csv con la data obtenida del censo
 
 ```{r datos, echo=FALSE}
-datos <- read_csv("data/HarmonizePECenso_DATA_2025-03-21_1508.csv")
+datos <- read_csv("data/HarmonizePECenso_DATA_2025-03-31_1546.csv")
 ```
 
 ### Asignación de códigos de comunidad y hogar
@@ -150,7 +150,7 @@ conteo
 ```
 
 ### 2.1. Ploteo de gráficas por comunidad
-```{r, fig.width=14, fig.height=6}
+```{r, fig.width=20, fig.height=6}
 ggplot(conteo, aes(x = total, y = categoria)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   geom_text(aes(label = total), hjust = -0.2) +  # Etiquetas en cada barra
@@ -213,7 +213,7 @@ datos_niños2 <- edades2 %>%
 ```
 
 
-```{r, fig.width=14, fig.height=6}
+```{r, fig.width=20, fig.height=6}
 conteo_edades <- datos_niños1 %>%
   group_by(comunidad_nombre) %>%
   summarise(
