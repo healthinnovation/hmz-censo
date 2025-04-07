@@ -32,7 +32,7 @@ jobs:
           Rscript -e "rmarkdown::render('00_data_validation.Rmd')"
 
       - name: Subir reporte como artefacto
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: reporte-html
           path: reporte.html
