@@ -1,0 +1,8 @@
+"0","coordinates <- db_hmz_encuesta_hogar_v10 %>%"
+"0","  select(id, upch_long, upch_lat)"
+"0",""
+"0","datos_sf <- datos %>%"
+"0","  left_join(coordinates, by = ""id"") %>%"
+"0","  filter(!is.na(upch_long)) %>%"
+"0","  filter(!is.na(upch_lat)) %>%"
+"0","  st_as_sf(coords = c(""upch_long"", ""upch_lat""), crs = 4326)"
