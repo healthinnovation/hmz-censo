@@ -1,6 +1,9 @@
 name: Generar Reporte R y Notificar
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: '0 5 * * *'   # Todos los días a las 5 AM UTC
 
