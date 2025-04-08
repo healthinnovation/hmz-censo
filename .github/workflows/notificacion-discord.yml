@@ -37,7 +37,10 @@ jobs:
 
       - name: Instalar redcapAPI desde GitHub
         run: |
+          export GITHUB_PAT=${TOKEN_PAT}
           Rscript -e "remotes::install_github('nutterb/redcapAPI')"
+        env:
+          TOKEN_PAT: ${{ secrets.TOKEN_PAT }}
 
       - name: Renderizar el Rmd
         run: |
