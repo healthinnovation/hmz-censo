@@ -63,4 +63,4 @@ jobs:
           curl -H "Content-Type: application/json" \
                -X POST \
                -d "{\"content\":\"✅ Reporte generado automáticamente el día $(date -u +'%Y-%m-%d %H:%M UTC') para el repo \`${{ github.repository }}\`.\"}" \
-               ${{ secrets.DISCORD_WEBHOOK }}
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
