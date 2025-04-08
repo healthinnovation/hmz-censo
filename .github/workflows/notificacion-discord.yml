@@ -26,7 +26,7 @@ jobs:
       - name: Instalar dependencias del sistema requeridas para sodium, keyring y redcapAPI
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgit2-dev libssl-dev libssh2-1-dev
+          sudo apt-get install -y libgit2-dev libssl-dev libssh2-1-dev libsodium-dev
 
       - name: Instalar dependencias de R (con sistema)
         uses: r-lib/actions/setup-r-dependencies@v2
