@@ -55,7 +55,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: reporte-html
-          path: reporte.html
+          path: 00_data_validation.html
+          if-no-files-found: error
 
       - name: Notificar a Discord
         run: |
