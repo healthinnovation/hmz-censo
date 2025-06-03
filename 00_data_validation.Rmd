@@ -1,8 +1,13 @@
 ---
 title: "Data validation"
 author: "HMZ"
-date: "2025-03-10"
-output: html_document
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    theme: flatly
 ---
 
 ```{r setup, include=FALSE}
@@ -52,7 +57,7 @@ Descarga de datos desde REDCAP.
 
 Leemos el .csv con la data obtenida del censo
 
-```{r datos, echo=FALSE}
+```{r datos, echo=FALSE, message = FALSE, warning = FALSE}
 datos <- read_csv("data/HarmonizePECenso_DATA_2025-03-31_1546.csv")
 ```
 
@@ -67,9 +72,6 @@ datos <- db_hmz_encuesta_individual_v10 %>%
     upch_code_community = substr(id, 3, 4),    # Extrae los siguientes 2 dígitos (comunidad)
     upch_code_casa = substr(id, 5, 7)         # Extrae los últimos 3 dígitos (hogar)
   ) 
-
-# Visualizar los primeros registros para verificar
-head(datos)
 ```
 ### Asignación de nombres de las comunidades 
 
@@ -157,6 +159,7 @@ conteo
 ```
 
 ### 2.1. Ploteo de gráficas por comunidad
+
 ```{r, fig.width=20, fig.height=6}
 ggplot(conteo, aes(x = total, y = categoria)) +
   geom_bar(stat = "identity", fill = "steelblue") +
@@ -174,7 +177,9 @@ ggplot(conteo, aes(x = total, y = categoria)) +
     axis.text.x = element_text(size = 10)
   )
 ```
+
 ### 2.2. Análisis de participación de la encuesta
+
 ```{r}
 datos_filtrados <- datos %>%
   select(comunidad_nombre, obs_encuesta, upch_ei_presente) %>%
@@ -248,7 +253,7 @@ ggplot(conteo_edades, aes(x = total, y = categoria)) +
   )
 ```
 
-```{r}
+```{r, include = FALSE}
 ggplot(conteo_edades, aes(x = total, y = categoria)) +
   geom_bar(stat = "identity", fill = "steelblue") +
   geom_text(aes(label = total), hjust = -0.2) +  # Etiquetas en cada barra
