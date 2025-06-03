@@ -64,6 +64,10 @@ jobs:
                -X POST \
                -d "{\"content\":\"✅ Reporte generado automáticamente el día $(date -u +'%Y-%m-%d %H:%M UTC') para el repo \`${{ github.repository }}\`.\"}" \
                ${{ secrets.DISCORD_WEBHOOK_URL }}
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\":\"✅ Reporte generado automáticamente el día $(date -u +'%Y-%m-%d %H:%M UTC') para el repo \`${{ github.repository }}\`.\"}" \
+               ${{ secrets.DISCORD_WEBHOOK_URL_2 }}
 
       - name: Publicar en GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
