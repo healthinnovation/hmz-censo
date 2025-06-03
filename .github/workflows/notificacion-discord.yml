@@ -49,13 +49,13 @@ jobs:
 
       - name: Renderizar el Rmd
         run: |
-          Rscript -e "rmarkdown::render('00_data_validation.Rmd')"
+          Rscript -e "rmarkdown::render('00_data_validation.Rmd', output_file = 'index.html')"
 
       - name: Subir reporte como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: reporte-html
-          path: 00_data_validation.html
+          path: index.html
           if-no-files-found: error
 
       - name: Notificar a Discord
@@ -64,3 +64,11 @@ jobs:
                -X POST \
                -d "{\"content\":\"✅ Reporte generado automáticamente el día $(date -u +'%Y-%m-%d %H:%M UTC') para el repo \`${{ github.repository }}\`.\"}" \
                ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Publicar en GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          force_orphan: true
