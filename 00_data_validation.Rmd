@@ -51,6 +51,8 @@ exportBulkRecords(
 )
 ```
 
+# Validación del Censo
+
 ## Carga de datos
 
 Descarga de datos desde REDCAP.
@@ -73,6 +75,7 @@ datos <- db_hmz_encuesta_individual_v10 %>%
     upch_code_casa = substr(id, 5, 7)         # Extrae los últimos 3 dígitos (hogar)
   ) 
 ```
+
 ### Asignación de nombres de las comunidades 
 
 ```{r}
@@ -94,7 +97,7 @@ datos <- datos %>%
 ```
 
 
-## 1. Verificación de la geolocalización de hogares
+## Verificación de la geolocalización de hogares
 
 Convertimos la base de datos a una geometría
 
@@ -109,7 +112,7 @@ datos_sf <- datos %>%
   st_as_sf(coords = c("upch_long", "upch_lat"), crs = 4326)
 ```
 
-### 1.1. Ubicación por comunidad para hacer la verificación
+### Ubicación por comunidad para hacer la verificación
 
 ```{r}
 
@@ -138,7 +141,7 @@ leaflet(datos_sf) %>%
 
 ```
 
-## 2. Validación de censados, encuestados y hogares por comunidad
+## Validación de censados, encuestados y hogares por comunidad
 
 ```{r }
 # 1. Calcular los totales
@@ -158,7 +161,7 @@ conteo <- datos %>%
 conteo
 ```
 
-### 2.1. Ploteo de gráficas por comunidad
+### Ploteo de gráficas por comunidad
 
 ```{r, fig.width=20, fig.height=6}
 ggplot(conteo, aes(x = total, y = categoria)) +
@@ -178,7 +181,7 @@ ggplot(conteo, aes(x = total, y = categoria)) +
   )
 ```
 
-### 2.2. Análisis de participación de la encuesta
+### Análisis de participación de la encuesta
 
 ```{r}
 datos_filtrados <- datos %>%
@@ -201,7 +204,7 @@ conteo_parti <- datos_parti %>%
 conteo_parti
 ```
 
-## 3. validacion de edad 
+## Validación de edad 
 
 ```{r}
 edades1 <- datos %>%
@@ -291,7 +294,7 @@ ggplot(edades1, aes(x = edad)) +
 ```
 
 
-## 4. Validación de sexo
+## Validación de sexo
 
 ```{r}
 
@@ -327,7 +330,7 @@ ggplot(conteo_sexo, aes(x = upch_ei_sexo, y = total_personas, fill = upch_ei_sex
 ```
 
 
-## 5. Validación de DNI (8 dígitos)
+## Validación de DNI (8 dígitos)
 
 ```{r}
 # 1. Validar DNI: 8 dígitos y que no sea '00000000' ni '99999999'
@@ -364,7 +367,7 @@ ggplot(conteo_dni_comunidad, aes(x = comunidad_nombre, y = total, fill = dni_val
   )
 ```
 
-## 6. Bivariado - Sexo y Embarazo
+## Bivariado - Sexo y Embarazo
 
 ```{r}
 # 1. Conteo de personas embarazadas por sexo
@@ -388,7 +391,7 @@ ggplot(conteo_embarazo, aes(x = upch_ei_sexo, y = total, fill = as.factor(upch_e
   scale_fill_manual(name = "Embarazada", values = c("Si" = "#1f77b4", "No" = "#ff7f0e")) +
   theme_minimal()
 ```
-## 7. Rechazo en menores y adultos
+## Rechazo en menores y adultos
 
 ```{r}
 # Filtrado inicial
@@ -417,7 +420,7 @@ conteo_parti <- datos_parti %>%
 conteo_parti
 ```
 
-## 8. Hogares con solo hombres o solo mujeres
+## Hogares con solo hombres o solo mujeres
 
 ```{r}
 # Identificar casas solo con hombres o solo con mujeres
