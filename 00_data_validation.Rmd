@@ -60,7 +60,7 @@ Descarga de datos desde REDCAP.
 Leemos el .csv con la data obtenida del censo
 
 ```{r datos, echo=FALSE, message = FALSE, warning = FALSE}
-datos <- read_csv("data/HarmonizePECenso_DATA_2025-03-31_1546.csv")
+# datos <- read_csv("data/HarmonizePECenso_DATA_2025-03-31_1546.csv")
 ```
 
 ### Asignación de códigos de comunidad y hogar
