@@ -1,0 +1,27 @@
+{
+    "id": "1FF98986",
+    "path": "D:/Research Projects/hmz-censo/00_data_validation.Rmd",
+    "project_path": "00_data_validation.Rmd",
+    "type": "r_markdown",
+    "hash": "2590077408",
+    "contents": "",
+    "dirty": false,
+    "created": 1742837622067.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "last_setup_crc32": "38e4fb6654a9d3d0",
+        "cursorPosition": "431,26",
+        "scrollLine": "422"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1744055444,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1744055444489,
+    "read_only": false,
+    "read_only_alternatives": []
+}

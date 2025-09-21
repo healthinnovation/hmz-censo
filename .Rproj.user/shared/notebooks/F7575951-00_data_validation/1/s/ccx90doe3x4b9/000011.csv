@@ -1,0 +1,8 @@
+"0","# 1. Conteo de personas embarazadas por sexo"
+"0","conteo_embarazo <- datos %>%"
+"0","  filter(!is.na(upch_ei_embarazada)) %>%  # Filtramos los que tienen datos en la columna de embarazo"
+"0","  group_by(upch_ei_sexo, upch_ei_embarazada) %>%"
+"0","  summarise(total = n(), .groups = ""drop"")"
+"0",""
+"0","# 2. Visualización del resultado"
+"0","print(conteo_embarazo)"

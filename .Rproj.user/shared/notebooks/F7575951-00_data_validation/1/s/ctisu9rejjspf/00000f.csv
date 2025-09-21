@@ -1,0 +1,8 @@
+"0",""
+"0","datos_niños2 <- datos_niños2 %>%"
+"0","  filter(!is.na(upch_ei_sexo)) "
+"0",""
+"0","# 1. Agrupar por comunidad y sexo, y calcular los totales"
+"0","conteo_sexo <- datos_niños2 %>%"
+"0","  group_by(comunidad_nombre, upch_ei_sexo) %>%"
+"0","  summarise(total_personas = n(), .groups = ""drop"")  # Suma de personas por sexo"
